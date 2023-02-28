@@ -1,0 +1,61 @@
+Describe template
+  Before all
+    let g:test_path = fnamemodify(resolve(expand('<sfile>:p')), ':h') . '/test'
+    let g:template#directories = [g:test_path . '/templates']
+    let g:expected = readfile(g:test_path . '/expected/test.c')
+    let g:expected[3] = substitute(g:expected[3], '2023', strftime('%Y'), 'g')
+    execute 'source' g:test_path . '/init.vim'
+    filetype on
+    edit test.c
+  End
+  It check {% here %}
+    Assert Equals(line('.'), 9)
+  End
+  It check b:template
+    Assert Equals(b:template, '\.c$')
+  End
+  It check find
+    Assert Equals(template#find('test.c', g:template#directories[0]), '%5C.c%24')
+  End
+  It check not find
+    Assert Equals(template#find('test.py', g:template#directories[0]), '')
+  End
+  It check autocmd template
+    Assert Equals(getline(1, '$'), g:expected)
+  End
+  It check :m,nTemplate
+    2,$-1Template
+    Assert Equals(getline(1, '$'), g:expected[0:0] + g:expected + g:expected[-1:-1])
+  End
+  It check :m,nTemplate!
+    1,$-1Template!
+    Assert Equals(getline(1, '$'), g:expected + g:expected[-1:-1])
+  End
+  It check :nTemplate
+    2,$delete
+    Template
+    Assert Equals(getline(1, '$'), g:expected[0:0] + g:expected)
+  End
+  It check :nTemplate!
+    2,$delete
+    Template!
+    Assert Equals(getline(1, '$'), g:expected + g:expected[0:0])
+  End
+  It check :TemplateCreate split
+    TemplateCreate split
+    Assert Equals(expand('%:p'), g:template#directories[0] . '/%5C.c%24')
+  End
+  It check :TemplateCreate split regular_expression
+    TemplateCreate split \.py$
+    Assert Equals(expand('%:p'), g:template#directories[0] . '/%5C.py%24')
+  End
+  It check autocmd ftdetect_template
+    Assert Equals(&filetype, 'jinja2')
+  End
+  It check completion of create
+    Assert Equals(template#complete#create('spli', 'vertical TemplateCreate spli', len('TemplateCreate spli')), 'split')
+  End
+  It check completion of expand
+    Assert Equals(template#complete#create('%5C', 'vertical TemplateCreate split \.', len('TemplateCreate split \.')), '\.c$')
+  End
+End
