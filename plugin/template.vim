@@ -27,21 +27,6 @@
 "       autocmd!
 "     augroup END
 command -nargs=? -bang -range -complete=custom,template#complete#expand Template call template#expand('<range>', '<line1>', '<line2>', '<bang>', '<args>')
-""
-" The template file should be a URL encode of regular expression.
-" You can `:TemplateCreate edit [regular_expression]` then vim will open the
-" encoded filename for you.
-"
-" By default, [regular_expression] is `b:template`, if it exists, else warn.
-" If @plugin(name) fill a template automatically for a file, it will set
-" `b:template`, so you can `:TemplateCreate split` to edit the template.
-"
-" Command to create template. You can use |<mods>| like:
-" >
-"     :vertical TemplateCreate split \.c$ \.py$
-" The first argument can be |:edit|, |:split|, etc.
-" The other arguments are regular expressions.
-command -nargs=+ -complete=custom,template#complete#create TemplateCreate call template#create('<mods>', <f-args>)
 
 if !exists('#template')
   augroup template

@@ -11,109 +11,13 @@
 " 3. `{% here %}` the cursor will jump to here.
 " 4. `{{-comment-}}` the white spaces in the side of `-` will be removed.
 "    Similar for other marks.
-" 5. `\{\{text\}\}` will be converted to `{{text}}`. Similar for other marks.
+" 5. `\{\{ text \}\}` will be converted to `{{ text }}`. Similar for other marks.
 "
 " The syntax highlight can be provided by vim's jinja2 plugin.
 
 ""
-" Configure the directories which store templates. The default value is:
-" 1. neovim
-" >
-"     let g:template#directories += [
-"          \ stdpath('config') . '/templates/before',
-"          \ stdpath('config') . '/templates',
-"          \ stdpath('config') . '/templates/after',
-"          \ ]
-" 2. vim
-" >
-"     let g:template#directories += [
-"          \ expand('~/.vim/templates/before'),
-"          \ expand('~/.vim/templates'),
-"          \ expand('~/.vim/templates/after'),
-"          \ ]
-" You can put:
-" 1. the templates which match full names and prefix names in
-"    `templates/before`. E.g.,
-" >
-"     /autoload/.*\.vim$  " vim autoload script
-"     /plugin/[^/]*\.vim$  " vim plugin script
-"     syntax_test-[^/]*$  " test file for sublime-syntax yaml file
-" 2. the templates which match long suffix names in `templates`. E.g.,
-" >
-"     .*-test\.py$  " pytest file
-"     .*-output\.yaml$  " config file to markdown preview enhanced about
-"                       " converting markdown to other formats
-" 3. the templates which match short suffix names in `templates` in order to
-"    avoid overriding long suffix names. E.g.,
-" >
-"     \.py$  " python file
-"     \.yaml$  " yaml file
-if exists('*stdpath')
-  let s:dirs = [
-        \ stdpath('config') . '/templates/before',
-        \ stdpath('config') . '/templates',
-        \ stdpath('config') . '/templates/after',
-        \ ]
-else
-  let s:dirs = [
-        \ expand('~/.vim/templates/before'),
-        \ expand('~/.vim/templates'),
-        \ expand('~/.vim/templates/after'),
-        \ ]
-endif
-call g:template#utils#plugin.Flag('g:template#directories', s:dirs)
-
-let g:template#URI = vital#template#import('Web.URI')
-
-""
-" Create a template. use {cmd} to open the templates.
-" First, search this template in `l:dirs`, if so, open it.
-" if not, create it in the `l:dirs[0]` and open it.
-function! template#create(mod, cmd, ...) abort
-  let l:dirs = filter(g:template#directories, {_, v -> isdirectory(v)})
-  if l:dirs == []
-    echohl WarningMsg
-    echomsg 'None of' join(g:template#directories, ', ') 'are directories!'
-    echohl None
-    return
-  endif
-  if len(a:000) > 0
-    let l:exprs = a:000
-  else
-    if get(b:, 'template') == 0
-      let l:exprs = [b:template]
-    else
-      echohl WarningMsg
-      echomsg 'No input regular expression or b:template!'
-      echohl None
-      return
-    endif
-  endif
-  for l:expr in l:exprs
-    let l:file = ''
-    for l:dir in l:dirs
-      let l:fname = l:dir . '/' . g:template#URI.encode(l:expr)
-      if filereadable(l:fname)
-        let l:file = fnameescape(l:fname)
-        break
-      endif
-    endfor
-    if l:file ==# ''
-      echomsg "Don't find" l:expr 'in' join(g:template#directories, ', ') ', create it!'
-      let l:fname = l:dirs[0] . '/' . g:template#URI.encode(l:expr)
-      let l:file = fnameescape(l:fname)
-    endif
-    execute a:mod a:cmd l:file
-  endfor
-endfunction
-
-""
 " Expand a template. See |:Template| to know its usage.
 function! template#expand(range, line1, line2, bang, fname) abort
-  let l:dirs = filter(g:template#directories, {_, v -> isdirectory(v)})
-  if l:dirs == []
-    return
-  endif
   if a:fname ==# ''
     let l:fname = expand('%:p')
   else
@@ -124,25 +28,22 @@ function! template#expand(range, line1, line2, bang, fname) abort
       let l:fname = getcwd() . '/' . l:fname
     endif
   endif
-  for l:dir in l:dirs
-    let l:found = template#find(l:fname, l:dir)
-    if l:found !=# ''
-      break
-    endif
-  endfor
-  let l:result = l:dir . '/' . l:found
-  if !filereadable(l:result)
+  let l:found = template#find(l:fname)
+  if l:found ==# ''
     return
   endif
-  " For :TemplateCreate
-  let b:template = g:template#URI.decode(l:found)
+  if exists('b:template')
+    unlet b:template
+  endif
+  ""
+  " Configure the template which current file uses.
+  call g:template#utils#plugin.Flag('b:template', l:found)
   if a:range != 2 && a:bang ==# '!'
     let l:line = a:line2 - 1
   else
     let l:line = a:line2
   endif
-  silent execute 'keepalt' l:line . 'r' fnameescape(l:result)
-  echomsg 'Load template' g:template#URI.decode(split(l:result, '/')[-1])
+  silent execute 'keepalt' l:line . 'r' fnameescape(b:template)
   if a:range == 2
     execute a:line1 . ',' . a:line2 . 'delete'
   endif
@@ -152,15 +53,52 @@ function! template#expand(range, line1, line2, bang, fname) abort
 endfunction
 
 ""
-" Find regular expression which matches {fname} in {dir}.
+" Find template path which matches {fname} in {dir}.
 " If not found, return ''.
-function! template#find(fname, dir) abort
-  for l:re in readdir(a:dir)
-    if a:fname =~# '\m' . g:template#URI.decode(l:re)
-      return l:re
-    endif
-  endfor
-  return ''
+function! template#find(fname, ...) abort
+  let l:dirs = get(a:000, 0, g:template#utils#directories)
+  let l:results = template#complete#find_all(a:fname, l:dirs)
+  call sort(l:results, 'template#sort')
+  return get(l:results, 0, '')
+endfunction
+
+""
+" Judge if {fname} match {template_name}.
+function! template#match(fname, template_name) abort
+  let l:glob = substitute(a:template_name, '%', '*', 'g')
+  let l:re = substitute(glob2regpat(l:glob), '\^', '/', '')
+  return a:fname =~# l:re
+endfunction
+
+""
+" Sort template paths {this} and {that}. Priority is decided by:
+"
+" 1. as more as count of "/" of path
+"
+" tests/CMakeList.txt > CMakeList.txt
+"
+" 2. as less as count of "%" of path
+"
+" CMakeList.txt > %.txt
+"
+" 3. as long as path
+"
+" test_%.py > %.py
+function! template#sort(this, that) abort
+  if count(a:this, '/') < count(a:that, '/')
+    return 1
+  elseif count(a:this, '/') > count(a:that, '/')
+    return -1
+  elseif count(a:this, '%') > count(a:that, '%')
+    return 1
+  elseif count(a:this, '%') < count(a:that, '%')
+    return -1
+  elseif len(a:this) < len(a:that)
+    return 1
+  elseif len(a:this) > len(a:that)
+    return -1
+  endif
+  return 0
 endfunction
 
 " vint: -ProhibitCommandRelyOnUser -ProhibitCommandWithUnintendedSideEffect

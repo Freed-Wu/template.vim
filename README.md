@@ -29,29 +29,10 @@
 
 Powerful template engine/plugin for vim.
 
-Template `%5C.c%24` (URL encode of `\.c$`), which syntax looks like a subset of
+Template `%.c`, which syntax looks like a subset of
 [jinja2](https://github.com/pallets/jinja/).
 
 ```jinja2
-/*
- * {{ expand('%:t') }}
- * Copyright (C) {{ strftime('%Y') }} {{ g:snips_author }} <{{ g:snips_email }}>
- *
- * Distributed under terms of the GPL3 license.
- */
-{# comment #}
-#if {{ len([]) }}
-#include "{{ expand('%:t:r') }}.h"{% here %}
-#endif
-#include <stdio.h>
-  {#-comment, strip left whitespaces #}int
-  {#-comment, strip around whitespaces-#}  main(int argc, char *argv[])
-{
-  printf("'\{\{ string \}\}' is %s", "not variable");
-  printf("'\{\# string \#\}' is %s", "not comment");
-  printf("'\{\%% string %\%\}' is %s", "not directive");
-  {# comment, strip right whitespaces-#}  return {{ 1 - 1 }};
-}
 ```
 
 ```bash
@@ -92,6 +73,10 @@ Your `.vimrc`. The variable names come from
 let g:snips_author = 'Freed'
 let g:snips_email = 'Freed@mail.com'
 ```
+
+Syntax highlight is provided:
+
+![syntax highlight](https://github.com/Freed-Wu/template.vim/assets/32936898/dc49ec2e-776a-4ccc-9329-d6b1bee7916f)
 
 ## Similar projects
 
@@ -150,8 +135,7 @@ works to convert your template formats to let this plugin support them:
 ```sh
 # change marks
 perl -pi -e"s/%DATE%/{{ strftime('%F') }}/g" *
-# change filenames like `=template=.c` to URL encode of `\.c$`
-perl-rename 's/^=template=\./%5C./' *
+perl-rename 's/^=template=\./%/' *
 perl-rename 's/$/%24/' *
 ```
 
