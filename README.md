@@ -27,6 +27,8 @@
 [![github/repo-size](https://shields.io/github/repo-size/Freed-Wu/template.vim)](https://github.com/Freed-Wu/template.vim)
 [![github/v](https://shields.io/github/v/release/Freed-Wu/template.vim)](https://github.com/Freed-Wu/template.vim)
 
+[![luarocks](https://img.shields.io/luarocks/v/Freed-Wu/template.vim)](https://luarocks.org/modules/Freed-Wu/template.vim)
+
 Powerful template engine/plugin for vim.
 
 Template `%.c`, which syntax looks like a subset of
