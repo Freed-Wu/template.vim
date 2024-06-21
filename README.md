@@ -35,6 +35,25 @@ Template `%.c`, which syntax looks like a subset of
 [jinja2](https://github.com/pallets/jinja/).
 
 ```jinja2
+/*
+ * {{ expand('%:t') }}
+ * Copyright (C) {{ strftime('%Y') }} {{ g:snips_author }} <{{ g:snips_email }}>
+ *
+ * Distributed under terms of the GPL3 license.
+ */
+{# comment #}
+#if {{ len([]) }}
+#include "{{ expand('%:t:r') }}.h"{% here %}
+#endif
+#include <stdio.h>
+  {#-comment, strip left whitespaces #}int
+  {#-comment, strip around whitespaces-#}  main(int argc, char *argv[])
+{
+  printf("'\{\{ string \}\}' is %s", "not variable");
+  printf("'\{\# string \#\}' is %s", "not comment");
+  printf("'\{\%% string %\%\}' is %s", "not directive");
+  {# comment, strip right whitespaces-#}  return {{ 1 - 1 }};
+}
 ```
 
 ```bash
@@ -46,7 +65,7 @@ You got
 
 ```c
 /*
- * test.c
+ * test.c.bak
  * Copyright (C) 2023 Freed <Freed@mail.com>
  *
  * Distributed under terms of the GPL3 license.

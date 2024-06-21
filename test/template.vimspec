@@ -2,20 +2,20 @@ Describe template
   Before all
     let g:test_path = fnamemodify(resolve(expand('<sfile>:p')), ':h') . '/test'
     let g:template#utils#directories = [g:test_path . '/templates']
-    let g:expected = readfile(g:test_path . '/expected/test.c')
+    let g:expected = readfile(g:test_path . '/expected/test.c.bak')
     let g:expected[2] = substitute(g:expected[2], '2023', strftime('%Y'), 'g')
     execute 'source' g:test_path . '/init.vim'
     filetype on
-    edit test.c
+    edit test.c.bak
   End
   It check {% here %}
     Assert Equals(line('.'), 9)
   End
   It check b:template
-    Assert Equals(b:template, g:template#utils#directories[0] . '/%.c')
+    Assert Equals(b:template, g:template#utils#directories[0] . '/%.c.bak')
   End
   It check find
-    Assert Equals(template#find('test.c', g:template#utils#directories), g:template#utils#directories[0] . '/%.c')
+    Assert Equals(template#find('test.c.bak', g:template#utils#directories), g:template#utils#directories[0] . '/%.c.bak')
   End
   It check not find
     Assert Equals(template#find('test.py', g:template#utils#directories), '')
