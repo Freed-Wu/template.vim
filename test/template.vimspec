@@ -3,7 +3,7 @@ Describe template
     let g:test_path = fnamemodify(resolve(expand('<sfile>:p')), ':h') . '/test'
     let g:template#utils#directories = [g:test_path . '/templates']
     let g:expected = readfile(g:test_path . '/expected/test.c')
-    let g:expected[3] = substitute(g:expected[3], '2023', strftime('%Y'), 'g')
+    let g:expected[2] = substitute(g:expected[2], '2023', strftime('%Y'), 'g')
     execute 'source' g:test_path . '/init.vim'
     filetype on
     edit test.c
