@@ -43,7 +43,7 @@ Template `%.c`, which syntax looks like a subset of
  */
 {# comment #}
 #if {{ len([]) }}
-#include "{{ expand('%:t:r') }}.h"{% here %}
+#include "{{ expand('%:t:r:r') }}.h"{% here %}
 #endif
 #include <stdio.h>
   {#-comment, strip left whitespaces #}int
